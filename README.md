@@ -63,3 +63,15 @@ data/input_audio/
 ```bash
 python main.py
 ```
+
+---
+
+## Dataset Note
+
+The full Cityscapes dataset is not included in this repository because of its large file size. The prototype can be run using the trained model files already included in the `models/` folder, together with the demo input images in `data/input_images/`.
+
+If you want to download the original Cityscapes dataset used for segmentation training, it is available from the official Cityscapes website:
+
+https://www.kaggle.com/datasets/electraawais/cityscape-dataset
+
+The dataset may require account registration before downloading. The main Cityscapes folders used for training were `leftImg8bit` for the road images and `gtFine` for the segmentation annotations.
