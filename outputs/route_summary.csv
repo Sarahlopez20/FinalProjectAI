@@ -1,0 +1,4 @@
+route_name,num_images,avg_danger_score,max_danger_score,avg_visual_risk,avg_weather_risk,avg_audio_risk,total_people,total_vehicles,total_bikes,travel_time_min,danger_level,long_low_traffic_km,route_description
+Route A,4,0.3218483612188945,0.360188373237469,0.4697003194854077,0.26685446351766584,0.0,7,12,9,18,Low,0.0,fastest urban route
+Route B,3,0.22816331740627915,0.4287989274786896,0.24143433082134136,0.14852987428506217,0.2440929510828603,0,10,0,21,Low,5.0,balanced route with a calmer section
+Route C,1,0.0669633125745499,0.0669633125745499,0.1116055209575832,0.0,0.0,0,0,0,38,Low,2.0,longer alternative route

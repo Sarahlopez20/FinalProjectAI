@@ -1,0 +1,4 @@
+route_name,travel_time_min,avg_danger_score,max_danger_score,danger_level,extra_time_min,extra_time_pct,risk_reduction_vs_fastest,risk_reduction_pct_vs_fastest,accepted_candidate,decision_reason
+Route A,18,0.3218483612188945,0.360188373237469,Low,0,0.0,0.0,0.0,True,Fastest route baseline
+Route B,21,0.22816331740627915,0.4287989274786896,Low,3,16.666666666666664,0.09368504381261533,29.108442080554376,False,"Rejected because the extra travel time is 16.7%, above the user's limit of 15.0%."
+Route C,38,0.0669633125745499,0.0669633125745499,Low,20,111.11111111111111,0.2548850486443446,79.19414213546142,False,"Rejected because the extra travel time is 111.1%, above the user's limit of 15.0%."
