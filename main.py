@@ -1,8 +1,7 @@
 # ============================================================
-# MAIN SCRIPT — Web UI version
-# Opens the NavSafe dashboard in your browser.
-# Upload images (and optional audio) through the UI.
-# The real pipeline runs on the server and streams logs live.
+# MAIN SCRIPT 
+# It opens the NavSafe dashboard in your browser.
+# The real pipeline runs on the server. 
 # ============================================================
 
 import sys
@@ -36,14 +35,12 @@ import pandas as pd
 # ============================================================
 
 app = Flask(__name__, static_folder=None)
-
-# Global log queue — pipeline writes here, SSE reads from here
 _log_queue: queue.Queue = queue.Queue()
 _pipeline_running = False
 
 
 # ============================================================
-# Logging helper — replaces print() inside the pipeline
+# Logging helper
 # ============================================================
 
 class QueueLogger:
@@ -67,7 +64,7 @@ class QueueLogger:
 
 
 # ============================================================
-# Routes — static UI
+# Routes
 # ============================================================
 
 UI_HTML = r"""<!DOCTYPE html>
@@ -880,10 +877,8 @@ def index():
 
 
 # ============================================================
-# Routes — API
+# Routes - API
 # ============================================================
-
-# run_id → Queue of SSE events
 _run_queues: dict = {}
 
 
@@ -894,7 +889,7 @@ def api_run():
     if _pipeline_running:
         return jsonify({"error": "Pipeline is already running"}), 429
 
-    # ── save uploaded images ─────────────────────────────────
+    # To save the uploaded images
     images = request.files.getlist("images")
     audio_files_uploaded = request.files.getlist("audio_files")  # multiple audio files
 
@@ -912,7 +907,7 @@ def api_run():
     except (TypeError, ValueError):
         max_extra_time_pct = 20.0
 
-    # Clear old input images
+    # To clear the old input images
     for old in INPUT_IMAGES_DIR.iterdir():
         if old.suffix.lower() in {".jpg", ".jpeg", ".png", ".bmp", ".webp"}:
             old.unlink()
@@ -923,7 +918,7 @@ def api_run():
         img.save(str(dest))
         image_paths.append(dest)
 
-    # Save all uploaded audio files; build stem→path map for pairing
+    # Pair the audio with the images
     for old in INPUT_AUDIO_DIR.iterdir():
         if old.suffix.lower() in {".wav", ".mp3", ".flac", ".ogg", ".m4a"}:
             old.unlink()
@@ -935,7 +930,7 @@ def api_run():
             af.save(str(audio_dest))
             audio_stem_map[Path(af.filename).stem] = audio_dest
 
-    # ── create run queue & start background thread ───────────
+    # Create the queue and start thread
     import uuid
     run_id = str(uuid.uuid4())
     q: queue.Queue = queue.Queue()
@@ -1025,7 +1020,7 @@ def _run_pipeline(q: queue.Queue, image_paths, audio_stem_map: dict,
 
         event("results", {"rows": rows})
 
-        # ── Route recommendation ──────────────────────────────
+        # Route recommendation
         event("step", {"step": 3})
         print("\n================ ROUTE RECOMMENDATION ================")
 
@@ -1118,7 +1113,7 @@ def api_stream(run_id):
 
 
 # ============================================================
-# Entry point
+# To open de browser
 # ============================================================
 
 def open_browser():
