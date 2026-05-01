@@ -1,1 +1,65 @@
-# FinalProjectAI
+# Risk-Aware Navigation System
+
+## Project Overview
+
+This project implements a multimodal artificial intelligence system that estimates the danger level of road scenes.
+The system analyzes visual, environmental, and optional audio signals to generate a risk score between 0 and 1, along with a classification
+of the risk level as Low, Medium, or High.
+
+The goal is to simulate an AI safety layer that could be integrated into navigation platforms such as Waze to provide safer route recommendations.
+
+---
+
+## Project Structure
+
+ROAD FINAL PROJECT/
+
+- config.py
+- main.py
+- requirements.txt
+- README.md
+
+src/
+- pipeline.py
+- scoring.py
+- segmentation.py
+- yolo_detection.py
+- weather.py
+- audio.py
+- visualization.py
+
+data/
+- input_images/
+- input_audio/
+
+models/
+- segmentation_model_improved.pth
+- weather_model.pth
+- weather_classes.npy
+- yolov8n.pt
+
+outputs/
+- results.csv
+- demo_images/
+- predicted_masks/
+
+---
+
+## Installation
+
+Open a terminal inside the project folder and run:
+
+```bash
+pip install -r requirements.txt
+```
+
+## How to Run
+1: Add road images to:
+data/input_images/
+2: (Optional) Add audio file to:
+data/input_audio/
+3: Run the project:
+
+```bash
+python main.py
+```
