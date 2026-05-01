@@ -1,15 +1,5 @@
 # ============================================================
 # SEGMENTATION INFERENCE MODULE
-# Loads the trained segmentation model and predicts grouped masks
-# for new road images.
-#
-# Grouped classes:
-# 0 = background / other
-# 1 = drivable area
-# 2 = sidewalk
-# 3 = vulnerable road users
-# 4 = vehicles
-# 5 = sky
 # ============================================================
 
 import cv2
@@ -28,7 +18,6 @@ from config import (
 
 # ============================================================
 # 1. Simple U-Net model
-# Must match the architecture in train_segmentation.py
 # ============================================================
 
 class DoubleConv(nn.Module):
@@ -136,11 +125,6 @@ def load_segmentation_model(device=None):
 # ============================================================
 
 def predict_segmentation_mask(image_path, model, device):
-    """
-    Takes an image path and returns:
-    - original RGB image
-    - predicted grouped mask resized back to original image size
-    """
 
     image = Image.open(image_path).convert("RGB")
     original_width, original_height = image.size
@@ -172,12 +156,9 @@ def predict_segmentation_mask(image_path, model, device):
 # ============================================================
 
 def colorize_segmentation_mask(mask):
-    """
-    Converts grouped mask into an RGB color image.
-    """
 
     color_map = {
-        0: (0, 0, 0),          # background / other = black
+        0: (0, 0, 0),         # background / other = black
         1: (128, 64, 128),    # road = purple
         2: (244, 35, 232),    # sidewalk = pink
         3: (220, 20, 60),     # vulnerable users = red
@@ -199,13 +180,6 @@ def colorize_segmentation_mask(mask):
 # ============================================================
 
 def extract_sky_crop(original_image, mask):
-    """
-    Uses the predicted sky class to crop the sky region.
-
-    Returns:
-    - sky_crop: RGB numpy array or None
-    - sky_ratio: fraction of pixels predicted as sky
-    """
 
     sky_mask = mask == 5
     sky_ratio = float(np.sum(sky_mask) / mask.size) if mask.size > 0 else 0.0
@@ -235,23 +209,13 @@ def extract_sky_crop_with_fallback(
     min_sky_ratio=0.02,
     fallback_top_ratio=0.35,
 ):
-    """
-    First tries to extract sky using the segmentation mask.
 
-    If the segmentation model does not detect enough sky,
-    it uses the top part of the image as a fallback sky crop.
-
-    This is useful for forward-facing road images where the sky
-    is usually located in the upper part of the image.
-    """
-
-    # First try normal segmentation-based sky extraction
     sky_crop, sky_ratio = extract_sky_crop(original_image, mask)
 
     if sky_crop is not None and sky_ratio >= min_sky_ratio:
         return sky_crop, sky_ratio, "segmentation"
 
-    # Fallback: use top part of the original image
+    #Fallback: use top part of the original image
     height, width = original_image.shape[:2]
     fallback_height = int(height * fallback_top_ratio)
 
@@ -264,9 +228,6 @@ def extract_sky_crop_with_fallback(
 # ============================================================
 
 def save_predicted_mask(mask, output_path):
-    """
-    Saves a colorized version of the predicted mask.
-    """
 
     color_mask = colorize_segmentation_mask(mask)
     color_mask_bgr = cv2.cvtColor(color_mask, cv2.COLOR_RGB2BGR)
