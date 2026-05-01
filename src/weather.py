@@ -17,7 +17,6 @@ from config import (
 
 # ============================================================
 # 1. Weather CNN model
-# Must match the architecture used in train_weather.py
 # ============================================================
 
 class WeatherCNN(nn.Module):
@@ -95,11 +94,6 @@ def load_weather_model(device=None):
 # ============================================================
 
 def predict_weather_from_image(image, model, weather_classes, device):
-    """
-    image can be:
-    - PIL image
-    - numpy array
-    """
 
     if isinstance(image, np.ndarray):
         image = Image.fromarray(image.astype(np.uint8)).convert("RGB")
