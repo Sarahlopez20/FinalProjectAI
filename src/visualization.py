@@ -1,6 +1,5 @@
 # ============================================================
 # VISUALIZATION MODULE
-# Creates final visual demo panels for road danger predictions.
 # ============================================================
 
 import cv2
@@ -44,13 +43,6 @@ def create_demo_panel(
     result,
     output_path,
 ):
-    """
-    Saves a 2x2 panel:
-    - original image
-    - segmentation overlay
-    - YOLO detections
-    - final score text
-    """
 
     segmentation_overlay = create_segmentation_overlay(original_image, mask)
 
@@ -124,9 +116,6 @@ def create_demo_panel(
 # ============================================================
 
 def save_sky_crop(sky_crop, output_path):
-    """
-    Saves extracted sky crop if it exists.
-    """
 
     if sky_crop is None:
         return False
