@@ -171,11 +171,10 @@ def predict_dangerousness(image_path, models, audio_path=None):
     # ---------------- TEMPORAL SMOOTHING ----------------
     risk_history.append(final_score["final_danger_score"])
 
-    # Keep only last 4 values
+    #We only keep only last 4 values
     if len(risk_history) > 4:
         risk_history.pop(0)
 
-    # Only compute mean when we have 4 values
     if len(risk_history) == 4:
         mean_risk_score = sum(risk_history) / 4
     else:
