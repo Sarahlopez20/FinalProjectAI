@@ -14,18 +14,6 @@ def clamp(value, minimum=0.0, maximum=1.0):
 
 
 def soft_normalize(value):
-    """
-    Softly converts a raw risk value into a 0-1 score.
-
-    Unlike hard clipping, this avoids turning every value above 1
-    into exactly 1. Risk still increases, but more progressively.
-
-    Example:
-    raw = 0.5  -> score = 0.33
-    raw = 1.0  -> score = 0.50
-    raw = 2.0  -> score = 0.67
-    raw = 4.0  -> score = 0.80
-    """
 
     value = max(0.0, value)
     return value / (1.0 + value)
@@ -89,18 +77,12 @@ def compute_visual_risk(segmentation_features, yolo_features=None):
     - number of bikes
     - size of the largest nearby vehicle
 
-    Vehicles are weighted moderately because they appear in both
-    segmentation and YOLO outputs.
     """
 
     vehicle_ratio = segmentation_features.get("vehicle_ratio", 0.0)
     vulnerable_ratio = segmentation_features.get("vulnerable_ratio", 0.0)
     sidewalk_ratio = segmentation_features.get("sidewalk_ratio", 0.0)
 
-    # Segmentation risk:
-    # - vehicle_ratio reduced to avoid double-counting with YOLO vehicles
-    # - vulnerable users remain highly weighted
-    # - sidewalk is a weak urban-context signal
     segmentation_risk = (
         1.8 * vehicle_ratio
         + 3.0 * vulnerable_ratio
@@ -115,11 +97,6 @@ def compute_visual_risk(segmentation_features, yolo_features=None):
         num_bikes = yolo_features.get("num_bikes", 0)
         largest_vehicle_area_ratio = yolo_features.get("largest_vehicle_area_ratio", 0.0)
 
-        # YOLO risk:
-        # - num_vehicles reduced because vehicles are already captured
-        #   by segmentation
-        # - people and bikes remain important because they are vulnerable
-        # - largest vehicle area captures proximity/blocking visibility
         yolo_risk = (
             0.06 * num_people
             + 0.035 * num_vehicles
@@ -129,7 +106,6 @@ def compute_visual_risk(segmentation_features, yolo_features=None):
 
     visual_risk_raw = segmentation_risk + yolo_risk
 
-    # Soft normalization avoids excessive saturation at 1.0.
     visual_risk_score = soft_normalize(visual_risk_raw)
 
     return {
@@ -143,15 +119,6 @@ def compute_visual_risk(segmentation_features, yolo_features=None):
 # ============================================================
 
 def compute_weather_risk(predicted_weather=None, confidence=0.0):
-    """
-    Converts predicted weather into a risk contribution.
-
-    Weather is treated as a contextual modifier:
-    - clear sunshine does not increase risk
-    - sunrise slightly increases risk because of lighting/glare
-    - cloudy weather moderately affects visibility
-    - rain has the strongest weather penalty
-    """
 
     if predicted_weather is None:
         return {
@@ -184,14 +151,6 @@ def compute_weather_risk(predicted_weather=None, confidence=0.0):
 # ============================================================
 
 def compute_audio_risk(audio_result=None):
-    """
-    Audio is optional.
-
-    If audio is available, it can add information about traffic sound,
-    horns, sirens, or general traffic intensity.
-
-    If no audio is available, it does not affect the score.
-    """
 
     if audio_result is None:
         return {
@@ -218,21 +177,10 @@ def compute_final_danger_score(
     weather_used=False,
     audio_used=False,
 ):
-    """
-    Combines available risk signals into a final danger score.
-
-    Visual risk has the highest weight because it captures the immediate
-    road scene: vehicles, pedestrians, cyclists, road layout, and proximity.
-
-    Weather and audio are modifiers. They matter, but they should not
-    dominate over what is directly visible in the scene.
-    """
 
     visual_risk_score = clamp(visual_risk_score)
     weather_score = clamp(weather_score)
     audio_score = clamp(audio_score)
-
-    # 🔥 UPDATED WEIGHTS (audio increased)
 
     if weather_used and audio_used:
         final_score = (
