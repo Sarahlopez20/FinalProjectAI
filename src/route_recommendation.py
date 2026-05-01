@@ -1,10 +1,6 @@
 # ============================================================
 # ROUTE RECOMMENDATION MODULE
-# Compares route danger vs travel time and recommends the best route.
-#
-# This module uses the image-level danger scores already produced
-# by the main pipeline in outputs/results.csv.
-#
+# Here we will do the time safety balance trade-off
 # Logic:
 # - Images are manually assigned to demo routes.
 # - Each route receives an average danger score and travel time.
@@ -21,14 +17,7 @@ import pandas as pd
 # ============================================================
 
 def normalize_image_name(image_name):
-    """
-    Normalizes image names so small filename differences do not break the route logic.
-
-    Examples:
-    - input_image_ 1.png      -> input_image_1.png
-    - input_image_3 (2).png   -> input_image_3.png
-    """
-
+    
     name = str(image_name).strip()
 
     # Remove spaces after underscores: input_image_ 1.png -> input_image_1.png
@@ -45,15 +34,7 @@ def normalize_image_name(image_name):
 # ============================================================
 
 def build_demo_route_mapping():
-    """
-    Manually assigns each input image to one possible route.
-
-    Demo story:
-    - Route A: fastest route, but riskier
-    - Route B: slightly slower, but safer/balanced
-    - Route C: safest route, but too slow to justify the detour
-    """
-
+  
     route_mapping = {
         # Route A: fastest but riskier
         "input_image_3.png": "Route A",
@@ -74,14 +55,6 @@ def build_demo_route_mapping():
 
 
 def build_demo_route_times():
-    """
-    Manually defines the estimated travel time for each route.
-
-    Current demo:
-    - Route A: 18 minutes
-    - Route B: 21 minutes
-    - Route C: 38 minutes
-    """
 
     route_times = {
         "Route A": 18,
@@ -93,15 +66,6 @@ def build_demo_route_times():
 
 
 def build_demo_route_context():
-    """
-    Optional route context used for notifications.
-
-    Important:
-    This is not part of the model's direct danger score.
-    It is manual route metadata used to add soft driving advice.
-
-    In a real product, this could come from map/navigation data.
-    """
 
     route_context = {
         "Route A": {
@@ -174,9 +138,6 @@ def ask_user_preferences():
 # ============================================================
 
 def classify_route_danger(score):
-    """
-    Converts average route danger score into a readable label.
-    """
 
     if score < 0.33:
         return "Low"
@@ -215,13 +176,13 @@ def calculate_route_summary(results_df, route_mapping, route_times, route_contex
     if "final_danger_score" not in df.columns:
         raise ValueError("results.csv must contain a 'final_danger_score' column.")
 
-    # Normalize image names for safer matching
+    #Normalize image names for safer matching
     df["normalized_image_name"] = df["image_name"].apply(normalize_image_name)
 
-    # Assign route name
+    #Assign route name
     df["route_name"] = df["normalized_image_name"].map(route_mapping)
 
-    # Print warning if any images are not mapped
+    #Print warning if any images are not mapped
     unmapped_images = df[df["route_name"].isna()]["image_name"].tolist()
 
     if unmapped_images:
@@ -229,7 +190,7 @@ def calculate_route_summary(results_df, route_mapping, route_times, route_contex
         for image_name in unmapped_images:
             print("-", image_name)
 
-    # Remove images not included in route mapping
+    #Remove images not included in route mapping
     df = df.dropna(subset=["route_name"])
 
     if df.empty:
@@ -239,8 +200,7 @@ def calculate_route_summary(results_df, route_mapping, route_times, route_contex
             "match the image_name column in outputs/results.csv."
         )
 
-    # Some columns may not exist depending on the pipeline version.
-    # If missing, create them with neutral values.
+
     optional_columns = {
         "weather_score": 0.0,
         "audio_score": 0.0,
@@ -254,7 +214,6 @@ def calculate_route_summary(results_df, route_mapping, route_times, route_contex
         if column_name not in df.columns:
             df[column_name] = default_value
 
-    # Group image-level results into route-level summary
     route_summary = (
         df.groupby("route_name")
         .agg(
@@ -271,7 +230,6 @@ def calculate_route_summary(results_df, route_mapping, route_times, route_contex
         .reset_index()
     )
 
-    # Add travel time
     route_summary["travel_time_min"] = route_summary["route_name"].map(route_times)
 
     if route_summary["travel_time_min"].isna().any():
@@ -280,12 +238,10 @@ def calculate_route_summary(results_df, route_mapping, route_times, route_contex
             "Check build_demo_route_times()."
         )
 
-    # Add readable danger level
     route_summary["danger_level"] = route_summary["avg_danger_score"].apply(
         classify_route_danger
     )
 
-    # Add route context, such as long low-traffic sections
     if route_context is None:
         route_context = {}
 
@@ -297,7 +253,6 @@ def calculate_route_summary(results_df, route_mapping, route_times, route_contex
         lambda route: route_context.get(route, {}).get("description", "")
     )
 
-    # Sort by travel time for clearer output
     route_summary = route_summary.sort_values(
         by="travel_time_min",
         ascending=True
@@ -315,23 +270,6 @@ def recommend_route(
     min_risk_reduction_pct=15,
     max_extra_time_pct=20,
 ):
-    """
-    Recommends a route based on user-defined safety-time preferences.
-
-    User inputs:
-    - min_risk_reduction_pct:
-      Minimum percentage risk reduction required to change from the fastest route.
-
-    - max_extra_time_pct:
-      Maximum percentage increase in travel time the user is willing to accept.
-
-    Example:
-    min_risk_reduction_pct = 15 means:
-    "I would change route if it reduces risk by at least 15%."
-
-    max_extra_time_pct = 20 means:
-    "I am willing to make my trip up to 20% slower."
-    """
 
     summary = route_summary.copy()
 
@@ -450,19 +388,8 @@ def recommend_route(
 
 def generate_route_notification(selected_route, route_summary):
     """
-    Generates a dynamic user-facing notification.
-
-    The message adjusts depending on:
-    - danger level
-    - number of vehicles
-    - number of people
-    - number of bikes
-    - weather risk
-    - visual risk
-    - long low-traffic sections
-
-    Important:
-    Long low-traffic sections are treated as advisory notifications,
+    Extra note:
+    We included that long low-traffic sections are treated as advisory notifications,
     not as direct danger-score penalties.
     """
 
@@ -486,39 +413,39 @@ def generate_route_notification(selected_route, route_summary):
 
     warnings = []
 
-    # Vehicle warning
+    #Vehicle warning
     if total_vehicles >= 6:
         warnings.append("high vehicle density was detected along this route")
     elif total_vehicles >= 3:
         warnings.append("moderate vehicle density was detected along this route")
 
-    # Pedestrian warning
+    #Pedestrian warning
     if total_people >= 3:
         warnings.append("several pedestrians were detected near the road")
     elif total_people >= 1:
         warnings.append("pedestrian activity was detected")
 
-    # Bike / cyclist warning
+    #Bike / cyclist warning
     if total_bikes >= 2:
         warnings.append("multiple cyclists or bikes were detected")
     elif total_bikes >= 1:
         warnings.append("a cyclist or bike was detected")
 
-    # Weather warning
+    #Weather warning
     if avg_weather_risk >= 0.45:
         warnings.append("adverse weather conditions may affect driving safety")
     elif avg_weather_risk >= 0.20:
         warnings.append("changing weather conditions may affect visibility or road grip")
 
-    # Visual scene warning
+    #Visual scene warning
     if avg_visual_risk >= 0.65:
         warnings.append("the visual scene shows a high-risk road environment")
 
-    # Dangerous segment warning, only as explanation/advice
+    #Dangerous segment warning, only as explanation/advice
     if max_danger_score >= 0.75:
         warnings.append("one section of the route shows unusually high risk")
 
-    # Base message
+    #Base message
     if danger_score >= 0.66:
         base_message = (
             f"{route_name} selected. Estimated time: {travel_time} min. "
@@ -540,7 +467,7 @@ def generate_route_notification(selected_route, route_summary):
             f"(average risk score: {danger_score:.3f}). "
         )
 
-    # Dynamic warning part
+    #Dynamic warning part
     if warnings:
         warning_text = "Main risk factors: " + "; ".join(warnings) + ". "
     else:
@@ -549,7 +476,7 @@ def generate_route_notification(selected_route, route_summary):
             "precautions are still recommended. "
         )
 
-    # Driving advice
+    #Driving advice
     if danger_score >= 0.66:
         advice = "Reduce speed, increase following distance, and stay highly alert."
     elif danger_score >= 0.33:
@@ -557,9 +484,7 @@ def generate_route_notification(selected_route, route_summary):
     else:
         advice = "Continue following normal driving precautions."
 
-    # Low-traffic / fatigue advisory
-    # This is not treated as a direct danger factor.
-    # It is a soft notification because long quiet sections can reduce attention.
+    #Low-traffic / fatigue advisory
     fatigue_advice = ""
 
     if long_low_traffic_km >= 4:
@@ -584,9 +509,6 @@ def generate_decision_explanation(
     min_risk_reduction_pct=15,
     max_extra_time_pct=20,
 ):
-    """
-    Generates a presentation-friendly explanation of why the route was selected.
-    """
 
     selected_name = selected_route["route_name"]
 
@@ -618,14 +540,6 @@ def run_route_recommendation(
     min_risk_reduction_pct=15,
     max_extra_time_pct=20,
 ):
-    """
-    Complete route recommendation process.
-
-    Reads outputs/results.csv, groups images into routes,
-    compares safety vs time using user-defined preferences,
-    recommends the best route,
-    and returns the output tables.
-    """
 
     results_df = pd.read_csv(results_csv_path)
 
