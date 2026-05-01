@@ -1,6 +1,5 @@
 # ============================================================
 # YOLO OBJECT DETECTION MODULE
-# Detects objects relevant to road danger using YOLOv8.
 # ============================================================
 
 from pathlib import Path
@@ -17,12 +16,6 @@ from config import YOLO_MODEL_PATH
 # ============================================================
 
 def load_yolo_model():
-    """
-    Loads YOLOv8 nano model.
-
-    If models/yolov8n.pt exists, it uses the local file.
-    Otherwise, ultralytics will try to download yolov8n.pt automatically.
-    """
 
     if YOLO_MODEL_PATH.exists():
         model_path = str(YOLO_MODEL_PATH)
@@ -38,9 +31,6 @@ def load_yolo_model():
 # ============================================================
 
 def run_yolo_detection(image_path, model, confidence_threshold=0.25):
-    """
-    Runs YOLO on an image and returns detections + road-relevant features.
-    """
 
     image_path = Path(image_path)
 
@@ -122,22 +112,12 @@ def run_yolo_detection(image_path, model, confidence_threshold=0.25):
 # ============================================================
 
 def draw_yolo_detections(image, detections):
-    """
-    Draws YOLO bounding boxes on an image.
-
-    image can be:
-    - BGR image from cv2
-    - RGB numpy image
-
-    Returns an RGB numpy image.
-    """
 
     if image is None:
         raise ValueError("Input image is None.")
 
     output = image.copy()
 
-    # If image likely comes from cv2, convert BGR to RGB later if needed.
     for detection in detections:
         x1, y1, x2, y2 = detection["bbox"]
         class_name = detection["class_name"]
@@ -160,7 +140,6 @@ def draw_yolo_detections(image, detections):
             cv2.LINE_AA,
         )
 
-    # Convert BGR to RGB for matplotlib display.
     output_rgb = cv2.cvtColor(output, cv2.COLOR_BGR2RGB)
 
     return output_rgb
